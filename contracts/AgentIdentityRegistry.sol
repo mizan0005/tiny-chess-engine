@@ -28,14 +28,12 @@ contract AgentIdentityRegistry {
 
     event AgentRegistered(bytes32 indexed agentIdHash, string agentId, address indexed wallet, string metadataURI);
     event MetadataUpdated(bytes32 indexed agentIdHash, string metadataURI);
-    event WalletChanged(bytes32 indexed agentIdHash, address indexed oldWallet, address indexed newWallet);
     event AgentDeactivated(bytes32 indexed agentIdHash, address indexed wallet);
 
     error EmptyAgentId();
     error AlreadyRegistered();
     error NotIdentityOwner();
     error WalletAlreadyLinked();
-    error ZeroAddress();
     error IdentityInactive();
     error AgentIdRequired();
 
@@ -64,20 +62,6 @@ contract AgentIdentityRegistry {
         if (item.wallet != msg.sender) revert NotIdentityOwner();
         item.metadataURI = metadataURI;
         emit MetadataUpdated(id, metadataURI);
-    }
-
-    function transferIdentity(string calldata agentId, address newWallet) external {
-        bytes32 id = _hash(agentId);
-        Identity storage item = identities[id];
-        if (!item.active) revert IdentityInactive();
-        if (item.wallet != msg.sender) revert NotIdentityOwner();
-        if (newWallet == address(0)) revert ZeroAddress();
-        if (walletToAgent[newWallet] != bytes32(0)) revert WalletAlreadyLinked();
-        address old = item.wallet;
-        delete walletToAgent[old];
-        walletToAgent[newWallet] = id;
-        item.wallet = newWallet;
-        emit WalletChanged(id, old, newWallet);
     }
 
     function deactivate(string calldata agentId) external {
