@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+/// @notice Minimal ERC-721 interface for the official Binance/SPACE ID Agent ID contract.
+interface IAgentId {
+    function balanceOf(address owner) external view returns (uint256);
+}
+
 /// @title AgentIdentityRegistry
-/// @notice Minimal self-service registry binding a human-readable Agent ID to a wallet.
+/// @notice Agent ID-holder-gated profile registry for the Tiny Chess project.
+/// @dev Registration is restricted to wallets holding at least one official Agent ID NFT.
+///      The user-supplied agentId string is a profile label; it is NOT independently
+///      resolved to or cryptographically proven as the NFT's name by this contract.
 contract AgentIdentityRegistry {
+    // Official SPACE ID Agent ID ERC-721 contract on BNB Chain (per Binance hackathon docs).
+    IAgentId public constant AGENT_ID_CONTRACT =
+        IAgentId(0x60b9262456de011f7d15a54cdd8c48baaa8b022f);
+
     struct Identity {
         address wallet;
         string metadataURI;
@@ -13,6 +25,7 @@ contract AgentIdentityRegistry {
 
     mapping(bytes32 => Identity) private identities;
     mapping(address => bytes32) public walletToAgent;
+
     event AgentRegistered(bytes32 indexed agentIdHash, string agentId, address indexed wallet, string metadataURI);
     event MetadataUpdated(bytes32 indexed agentIdHash, string metadataURI);
     event WalletChanged(bytes32 indexed agentIdHash, address indexed oldWallet, address indexed newWallet);
@@ -24,12 +37,21 @@ contract AgentIdentityRegistry {
     error WalletAlreadyLinked();
     error ZeroAddress();
     error IdentityInactive();
+    error AgentIdRequired();
+
+    /// @notice Returns true when a wallet holds at least one official Agent ID NFT.
+    function hasAgentId(address wallet) public view returns (bool) {
+        return AGENT_ID_CONTRACT.balanceOf(wallet) > 0;
+    }
 
     function register(string calldata agentId, string calldata metadataURI) external {
+        if (!hasAgentId(msg.sender)) revert AgentIdRequired();
+
         bytes32 id = _hash(agentId);
         if (bytes(agentId).length == 0) revert EmptyAgentId();
         if (identities[id].active) revert AlreadyRegistered();
         if (walletToAgent[msg.sender] != bytes32(0)) revert WalletAlreadyLinked();
+
         identities[id] = Identity(msg.sender, metadataURI, uint64(block.timestamp), true);
         walletToAgent[msg.sender] = id;
         emit AgentRegistered(id, agentId, msg.sender, metadataURI);
