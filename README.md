@@ -21,7 +21,6 @@ A wallet must hold at least one Agent ID NFT. This is an on-chain access-control
 - `hasAgentId(address)` — checks whether a wallet holds an official Agent ID NFT.
 - `register(agentId, metadataURI)` — creates a profile for an Agent ID holder.
 - `updateMetadata(agentId, metadataURI)` — updates the profile metadata.
-- `transferIdentity(agentId, newWallet)` — transfers the registry profile record.
 - `deactivate(agentId)` — deactivates the profile.
 - `getIdentity(agentId)` — reads the public profile record.
 
