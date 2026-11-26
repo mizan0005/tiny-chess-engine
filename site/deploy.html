@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deploy Agent Identity Registry</title>
+<style>
+body{font:16px system-ui;background:#101827;color:#eef2ff;margin:0;padding:20px}main{max-width:620px;margin:auto}h2{font-size:22px}button{width:100%;padding:15px;margin:8px 0;border:0;border-radius:10px;background:#f0b90b;color:#111;font-weight:700;font-size:16px}button:disabled{opacity:.45}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1e293b;padding:12px;border-radius:8px}small{color:#bac5d6}.warn{color:#ffd166}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+<script src="https://binaries.soliditylang.org/bin/soljson-v0.8.24+commit.e11b9ed9.js"></script>
+<script src="https://unpkg.com/solc@0.8.24/wrapper.js"></script>
+</head>
+<body><main>
+<h2>Agent Identity Registry — BNB Mainnet</h2>
+<p>Connect your Binance Web3/Agentic Wallet, compile the repository contract, then deploy. Your wallet signs the transaction; this page never asks for a recovery phrase or private key.</p>
+<p class="warn">Network: BNB Smart Chain Mainnet (Chain ID 56). Deployment costs BNB gas.</p>
+<button id="connect">1. Connect wallet</button>
+<button id="compile" disabled>2. Compile contract</button>
+<button id="deploy" disabled>3. Deploy contract</button>
+<pre id="status">Waiting for wallet connection…</pre>
+<pre id="address"></pre>
+<script>
+const source = "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\ninterface IAgentId { function balanceOf(address owner) external view returns (uint256); }\ncontract AgentIdentityRegistry {\n    IAgentId public constant AGENT_ID_CONTRACT = IAgentId(0x60b9262456de011f7d15a54cdd8c48baaa8b022f);\n    struct Identity { address wallet; string metadataURI; uint64 registeredAt; bool active; }\n    mapping(bytes32 => Identity) private identities;\n    mapping(address => bytes32) public walletToAgent;\n    event AgentRegistered(bytes32 indexed agentIdHash, string agentId, address indexed wallet, string metadataURI);\n    event MetadataUpdated(bytes32 indexed agentIdHash, string metadataURI);\n    event AgentDeactivated(bytes32 indexed agentIdHash, address indexed wallet);\n    error EmptyAgentId(); error AlreadyRegistered(); error NotIdentityOwner(); error WalletAlreadyLinked(); error IdentityInactive(); error AgentIdRequired();\n    function hasAgentId(address wallet) public view returns (bool) { return AGENT_ID_CONTRACT.balanceOf(wallet) > 0; }\n    function register(string calldata agentId, string calldata metadataURI) external {\n        if (!hasAgentId(msg.sender)) revert AgentIdRequired();\n        bytes32 id = _hash(agentId);\n        if (bytes(agentId).length == 0) revert EmptyAgentId();\n        if (identities[id].active) revert AlreadyRegistered();\n        if (walletToAgent[msg.sender] != bytes32(0)) revert WalletAlreadyLinked();\n        identities[id] = Identity(msg.sender, metadataURI, uint64(block.timestamp), true);\n        walletToAgent[msg.sender] = id;\n        emit AgentRegistered(id, agentId, msg.sender, metadataURI);\n    }\n    function updateMetadata(string calldata agentId, string calldata metadataURI) external {\n        bytes32 id = _hash(agentId); Identity storage item = identities[id];\n        if (!item.active) revert IdentityInactive(); if (item.wallet != msg.sender) revert NotIdentityOwner();\n        item.metadataURI = metadataURI; emit MetadataUpdated(id, metadataURI);\n    }\n    function deactivate(string calldata agentId) external {\n        bytes32 id = _hash(agentId); Identity storage item = identities[id];\n        if (!item.active) revert IdentityInactive(); if (item.wallet != msg.sender) revert NotIdentityOwner();\n        item.active = false; delete walletToAgent[msg.sender]; emit AgentDeactivated(id, msg.sender);\n    }\n    function getIdentity(string calldata agentId) external view returns (address wallet, string memory metadataURI, uint64 registeredAt, bool active) {\n        Identity memory item = identities[_hash(agentId)]; return (item.wallet, item.metadataURI, item.registeredAt, item.active);\n    }\n    function _hash(string calldata agentId) private pure returns (bytes32) { return keccak256(bytes(agentId)); }\n}";
+let signer, bytecode, abi;
+const status = (s)=>document.getElementById('status').textContent=s;
+document.getElementById('connect').onclick=async()=>{
+ try{
+  if(!window.ethereum) throw new Error('No injected wallet found. Open this page inside Binance Wallet browser.');
+  await window.ethereum.request({method:'eth_requestAccounts'});
+  let p=new ethers.BrowserProvider(window.ethereum); let net=await p.getNetwork();
+  if(net.chainId!==56n){try{await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x38'}]});}catch(e){throw new Error('Switch wallet network to BNB Smart Chain Mainnet (Chain ID 56), then reconnect.');}}
+  p=new ethers.BrowserProvider(window.ethereum); signer=await p.getSigner();
+  status('Connected: '+await signer.getAddress()+'\nNetwork: BNB Smart Chain Mainnet');
+  document.getElementById('compile').disabled=false;
+ }catch(e){status('ERROR: '+(e.shortMessage||e.message));}
+};
+document.getElementById('compile').onclick=()=>{
+ try{
+  if(typeof Module==='undefined'||typeof solc==='undefined') throw new Error('Compiler library did not load. Refresh and retry.');
+  const compiler=solc.setupMethods(Module);
+  const input={language:'Solidity',sources:{'AgentIdentityRegistry.sol':{content:source}},settings:{optimizer:{enabled:true,runs:200},outputSelection:{'*':{'*':['abi','evm.bytecode.object']}}}};
+  const out=JSON.parse(compiler.compile(JSON.stringify(input)));
+  const errs=(out.errors||[]).filter(x=>x.severity==='error');
+  if(errs.length) throw new Error(errs.map(x=>x.formattedMessage).join('\n'));
+  const c=out.contracts['AgentIdentityRegistry.sol'].AgentIdentityRegistry;
+  abi=c.abi; bytecode='0x'+c.evm.bytecode.object;
+  if(bytecode==='0x') throw new Error('No deployment bytecode generated.');
+  status('Compile successful. Contract bytecode ready.'); document.getElementById('deploy').disabled=false;
+ }catch(e){status('COMPILE ERROR: '+e.message);}
+};
+document.getElementById('deploy').onclick=async()=>{
+ try{
+  if(!signer||!bytecode) throw new Error('Connect wallet and compile first.');
+  const f=new ethers.ContractFactory(abi,bytecode,signer);
+  status('Requesting wallet confirmation… Check the deployment transaction and gas in Binance Wallet.');
+  const c=await f.deploy(); status('Transaction sent: '+c.deploymentTransaction().hash+'\nWaiting for BNB Chain confirmation…');
+  await c.waitForDeployment(); const a=await c.getAddress();
+  document.getElementById('address').textContent='DEPLOYED CONTRACT ADDRESS\n'+a+'\nBscScan: https://bscscan.com/address/'+a;
+  status('Deployment confirmed on BNB Smart Chain Mainnet.');
+ }catch(e){status('DEPLOY ERROR: '+(e.shortMessage||e.message));}
+};
+</script></main></body></html>
