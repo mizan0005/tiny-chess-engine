@@ -20,7 +20,7 @@ a{color:#7dd3fc}
 <body><main>
 <div class="tag">BNB Smart Chain · Agent Identity</div>
 <h1>Mizan Agent Identity Hub</h1>
-<p class="muted">A simple on-chain registry that lets an AI agent owner bind a human-readable Agent ID to a wallet and publish a metadata link. Registration is self-service and wallet-signed.</p>
+<p class="muted">An Agent ID-holder-gated profile registry for Tiny Chess. The contract checks the official Agent ID NFT balance before allowing a wallet to create a profile.</p>
 <div class="row"><span class="pill">Open source</span><span class="pill">Self-custody</span><span class="pill">No private-key collection</span></div>
 <section class="panel">
 <h2>Connect your wallet</h2>
@@ -28,17 +28,17 @@ a{color:#7dd3fc}
 <button id="connect">Connect wallet</button><div id="wallet" class="status">Wallet not connected.</div>
 <label for="agent">Agent ID</label><input id="agent" value="mizan0005.ai" maxlength="96">
 <label for="metadata">Metadata URI (optional)</label><input id="metadata" placeholder="https://example.com/agent.json">
-<div class="row"><button id="register" class="secondary">Register Agent ID</button><button id="lookup" class="secondary">Look up Agent ID</button></div>
+<div class="row"><button id="register" class="secondary">Create Agent Profile</button><button id="lookup" class="secondary">Look up Agent ID</button></div>
 <div id="result" class="status">Demo interface. Contract address will be added after deployment and verification.</div>
 </section>
-<section class="panel"><h2>How it works</h2><ol class="muted"><li>Connect an EVM wallet.</li><li>Register an available Agent ID on BNB Smart Chain.</li><li>Verify the wallet binding using the public registry.</li></ol><small>Registration requires a blockchain transaction and network gas. This demo does not claim that an identity is registered until a verified contract is connected.</small></section>
+<section class="panel"><h2>How it works</h2><ol class="muted"><li>Connect an EVM wallet.</li><li>Register an available Agent ID on BNB Smart Chain.</li><li>Verify the wallet binding using the public registry.</li></ol><small>Profile creation requires an Agent ID NFT, a deployed contract, and a user-approved transaction with network gas. The profile label is not independently verified as the NFT's exact name.</small></section>
 <p class="muted"><a href="https://github.com/mizan0005/tiny-chess-engine">Open-source repository</a> · <a href="https://bscscan.com">BscScan</a></p>
 </main>
 <script>
 let provider, signer, account;
 const $=id=>document.getElementById(id);
 $("connect").onclick=async()=>{try{if(!window.ethereum)throw Error("No EVM wallet detected. Open this page in MetaMask or a compatible wallet.");provider=new ethers.BrowserProvider(window.ethereum);await provider.send("eth_requestAccounts",[]);signer=await provider.getSigner();account=await signer.getAddress();$("wallet").textContent="Connected: "+account;}catch(e){$("wallet").textContent=e.message;}};
-$("register").onclick=()=>{$("result").textContent="Contract is not deployed yet. No transaction has been sent. The contract source is available in this repository.";};
+$("register").onclick=()=>{$("result").textContent="Contract is not deployed yet. No transaction has been sent. After deployment, only wallets holding the official Agent ID NFT can create a profile.";};
 $("lookup").onclick=()=>{$("result").textContent="Lookup becomes available after the verified BNB Smart Chain contract address is configured.";};
 </script>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
