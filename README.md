@@ -1,41 +1,29 @@
-# Tiny Chess Engine
+# Mizan Agent Identity Hub
 
-A compact, deterministic chess engine written for Python 3.13. It uses [python-chess](https://python-chess.readthedocs.io/) for legal move generation and implements its own material/centralization evaluation and alpha-beta negamax search.
+An open-source, self-service registry concept for binding a human-readable AI Agent ID to an EVM wallet on BNB Smart Chain.
 
-## Features
+## Repository contents
 
-- UCI command loop: uci, isready, ucinewgame, position, go depth N, quit
-- Deterministic move ordering and search
-- Alpha-beta pruning with bounded search depth (1–6)
-- Checkmate and draw detection
-- No paid APIs, hosted models, or network calls at runtime
+- `contracts/AgentIdentityRegistry.sol` — Solidity registry source.
+- `site/index.html` — lightweight wallet-connect product interface.
+- `main.py` — separate experimental Tiny Chess Engine module retained in this repository.
 
-## Requirements
+## Contract functions
 
-- Python 3.13
-- Install dependencies: python -m pip install -r requirements.txt
+- Register an unused Agent ID for the connected wallet.
+- Update the metadata URI.
+- Transfer the identity to another wallet.
+- Deactivate an identity.
+- Read the public identity record.
 
-## Run
+## Important deployment status
 
-    python main.py
+The Solidity source is prepared but is **not deployed**. There is no contract address yet and no BscScan verification link. Do not submit a fabricated address. Deployment requires the owner to review the source and sign a transaction with their own wallet on BNB Smart Chain; never share a seed phrase or private key.
 
-Then send UCI commands, one per line, for example:
+## Product website
 
-    uci
-    isready
-    position startpos
-    go depth 3
-    quit
+The static product interface is in `site/index.html`. GitHub Actions is configured to publish the `site/` directory to GitHub Pages. The repository owner may need to enable GitHub Pages / Actions in repository Settings before the first deployment.
 
-The engine responds with bestmove <uci-move>. It can also be driven by a UCI-compatible chess GUI that can launch a local Python command.
+## Agent ID
 
-## Tests
-
-    python -m unittest discover -s tests -v
-    python -m py_compile main.py
-
-GitHub Actions runs the test suite on pushes and pull requests using Python 3.13.
-
-## Scope
-
-This is a small baseline engine, not a grandmaster-strength engine. Search strength depends on depth and available compute; the default search depth is 3.
+Intended initial Agent ID: `mizan0005.ai`. The registry does not claim ownership or verification of an Agent ID outside the on-chain transaction.
