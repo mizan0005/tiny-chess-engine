@@ -1,29 +1,40 @@
 # Mizan Agent Identity Hub
 
-An open-source, self-service registry concept for binding a human-readable AI Agent ID to an EVM wallet on BNB Smart Chain.
+An open-source profile registry for the Tiny Chess project on BNB Chain. Registration is gated by ownership of the official Binance/SPACE ID Agent ID NFT.
 
 ## Repository contents
 
-- `contracts/AgentIdentityRegistry.sol` — Solidity registry source.
+- `contracts/AgentIdentityRegistry.sol` — Solidity registry with an on-chain Agent ID-holder check.
 - `site/index.html` — lightweight wallet-connect product interface.
 - `main.py` — separate experimental Tiny Chess Engine module retained in this repository.
 
+## How Agent ID is used
+
+Before a wallet can register a profile, the contract calls `balanceOf(msg.sender)` on the official Agent ID ERC-721 contract:
+
+`0x60b9262456de011f7d15a54cdd8c48baaa8b022f`
+
+A wallet must hold at least one Agent ID NFT. This is an on-chain access-control check. The profile label entered by the user is not independently resolved to the NFT's actual name by this contract; do not describe the label as cryptographically verified.
+
 ## Contract functions
 
-- Register an unused Agent ID for the connected wallet.
-- Update the metadata URI.
-- Transfer the identity to another wallet.
-- Deactivate an identity.
-- Read the public identity record.
+- `hasAgentId(address)` — checks whether a wallet holds an official Agent ID NFT.
+- `register(agentId, metadataURI)` — creates a profile for an Agent ID holder.
+- `updateMetadata(agentId, metadataURI)` — updates the profile metadata.
+- `transferIdentity(agentId, newWallet)` — transfers the registry profile record.
+- `deactivate(agentId)` — deactivates the profile.
+- `getIdentity(agentId)` — reads the public profile record.
 
-## Important deployment status
+The registry profile is separate from the Binance Agent ID NFT. It does not mint, transfer, or modify the official NFT.
 
-The Solidity source is prepared but is **not deployed**. There is no contract address yet and no BscScan verification link. Do not submit a fabricated address. Deployment requires the owner to review the source and sign a transaction with their own wallet on BNB Smart Chain; never share a seed phrase or private key.
+## Deployment status
+
+The Solidity source is committed but **not deployed**. There is no contract address and no BscScan verification link yet. Hackathon participation requires deployment on BNB Smart Chain and source-code verification on BscScan. Deployment requires the owner to review the source and sign the transaction with their own wallet. Never share a seed phrase or private key.
 
 ## Product website
 
-The static product interface is in `site/index.html`. GitHub Actions is configured to publish the `site/` directory to GitHub Pages. The repository owner may need to enable GitHub Pages / Actions in repository Settings before the first deployment.
+The static interface is in `site/index.html`. GitHub Actions is configured to publish the `site/` directory to GitHub Pages. The repository owner may need to enable GitHub Pages / Actions in repository Settings before the first deployment.
 
-## Agent ID
+## Intended initial profile label
 
-Intended initial Agent ID: `mizan0005.ai`. The registry does not claim ownership or verification of an Agent ID outside the on-chain transaction.
+`mizan0005.ai` (user-provided label; not independently verified against the NFT name by this registry).
